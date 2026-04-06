@@ -1,4 +1,4 @@
-# --- Build tools (FIXES pkg_resources error) ---
+# --- Build tools ---
 setuptools>=68.0.0
 wheel
 pip>=25.0
@@ -25,9 +25,9 @@ google-generativeai==0.7.2
 google-api-core==2.19.1
 google-auth==2.29.0
 
-# --- grpc FIXED ---
-grpcio==1.60.1
-grpcio-status==1.60.1
+# --- grpc FIXED: use newer version with pre-built wheels ---
+grpcio==1.64.1
+grpcio-status==1.64.1
 protobuf==4.25.3
 
 # --- Utils ---
