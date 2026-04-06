@@ -1,34 +1,37 @@
+# --- Build tools (FIXES pkg_resources error) ---
+setuptools>=68.0.0
+wheel
+pip>=25.0
+
 # --- Core API ---
 fastapi==0.110.0
 uvicorn[standard]==0.29.0
 python-dotenv==1.0.1
 
-# --- HTTP / Networking ---
+# --- Networking ---
 httpx==0.27.0
 requests==2.31.0
 
 # --- Pydantic ---
 pydantic==2.7.1
 
-# --- LangChain + LangGraph ---
+# --- LangChain + Gemini ---
 langchain-core==0.2.43
 langchain-google-genai==1.0.10
 langgraph==0.0.55
 
-# --- Google Gemini ---
+# --- Google ---
 google-generativeai==0.7.2
 google-api-core==2.19.1
 google-auth==2.29.0
 
-# --- CRITICAL: grpc + protobuf (FIXED VERSIONS) ---
+# --- grpc FIXED ---
 grpcio==1.60.1
 grpcio-status==1.60.1
 protobuf==4.25.3
 
-# --- Utilities ---
+# --- Utils ---
 PyYAML==6.0.1
 tenacity==8.2.3
 tqdm==4.66.4
-
-# --- Optional but safe ---
 orjson==3.10.7
