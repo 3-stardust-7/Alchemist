@@ -4,7 +4,7 @@ import { StepPill, ContentPanel, AlchemyLoader,SourcePreview} from "../component
 import { MarkdownBlock} from "../components/display";
 import '../../src/App.css'
 
-const API_BASE = "http://localhost:8000";
+const API_BASE = import.meta.env.VITE_API_URL;
 
 function downloadTxt(filename, text) {
   const blob = new Blob([typeof text === "string" ? text : JSON.stringify(text, null, 2)], { type: "text/plain" });
@@ -64,33 +64,6 @@ function extractEmail(val) {
   return restoreStructure(fixNewlines(String(val)));
 }
 
-function parseSocialThread(raw) {
-  if (!raw) return [];
-  if (Array.isArray(raw)) {
-    return raw.map(p =>
-      typeof p === "string" ? p
-      : p.tweet || p.text || p.content || p.post || JSON.stringify(p)
-    );
-  }
-  if (typeof raw === "object") {
-    const arr = raw.posts || raw.tweets || raw.thread ||
-      Object.values(raw).find(Array.isArray);
-    if (arr) return parseSocialThread(arr);
-    const strings = Object.values(raw).filter(v => typeof v === "string" && v.length > 10);
-    if (strings.length > 1) return strings;
-    return [extractText(raw)];
-  }
-  if (typeof raw === "string") {
-    try { return parseSocialThread(JSON.parse(raw)); } catch (_) {}
-    const parts = raw.split(/\n?---\n?/).map(s => s.trim()).filter(Boolean);
-    if (parts.length > 1) return parts;
-    const numbered = raw.match(/[0-9][/][0-9][^\n]*/g);
-    if (numbered && numbered.length > 1) return numbered.map(s => s.trim());
-    return [raw];
-  }
-  return [String(raw)];
-}
-
 function normalizeResults(data) {
   return {
     fact_sheet:    extractText(data.fact_sheet),
@@ -108,15 +81,6 @@ function loadSession() {
 }
 function clearSession() {
   try { sessionStorage.removeItem("alchemist_session"); } catch (_) {}
-}
-
-function stripMd(text) {
-  if (!text) return "";
-  return String(text)
-    .replace(/\*\*(.+?)\*\*/g, "$1")
-    .replace(/\*(.+?)\*/g, "$1")
-    .replace(/__(.+?)__/g, "$1")
-    .replace(/_(.+?)_/g, "$1");
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -187,7 +151,7 @@ export default function App() {
           <h1 className="hero-title">Turn one document<br />into <em>three channels</em></h1>
           <p className="hero-sub">
             Drop your raw source material below. Agent I verifies every fact.<br />
-            Agent II transmutes it into a blog post, social thread, and email teaser — simultaneously.
+            Agent II transmutes it into a blog post, social thread, and email teaser simultaneously.
           </p>
         </div>
         <div className="pipeline-row">
