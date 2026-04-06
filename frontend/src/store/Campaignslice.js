@@ -2,18 +2,18 @@ import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 
 const API_BASE = "http://localhost:8000";
 
-// Async thunk — sends document to FastAPI
 export const submitDocument = createAsyncThunk(
   "campaign/submitDocument",
   async ({ content, source_type }, { rejectWithValue }) => {
     try {
-      const response = await fetch(`${API_BASE}/api/submit-document`, {
+      const response = await fetch(`${API_BASE}/api/process-document`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ content, source_type }),
       });
       if (!response.ok) {
-        throw new Error(`Server error: ${response.status}`);
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(errData.detail || `Server error: ${response.status}`);
       }
       return await response.json();
     } catch (err) {
@@ -27,9 +27,12 @@ const campaignSlice = createSlice({
   initialState: {
     sourceContent: "",
     sourceType: "text",
-    submitStatus: "idle", // "idle" | "loading" | "success" | "error"
+    submitStatus: "idle", 
     submitError: null,
-    serverResponse: null,
+    factSheet: null,
+    blogPost: null,
+    socialThread: null,
+    emailTeaser: null,
   },
   reducers: {
     setSourceContent: (state, action) => {
@@ -42,7 +45,10 @@ const campaignSlice = createSlice({
       state.sourceContent = "";
       state.submitStatus = "idle";
       state.submitError = null;
-      state.serverResponse = null;
+      state.factSheet = null;
+      state.blogPost = null;
+      state.socialThread = null;
+      state.emailTeaser = null;
     },
   },
   extraReducers: (builder) => {
@@ -50,10 +56,17 @@ const campaignSlice = createSlice({
       .addCase(submitDocument.pending, (state) => {
         state.submitStatus = "loading";
         state.submitError = null;
+        state.factSheet = null;
+        state.blogPost = null;
+        state.socialThread = null;
+        state.emailTeaser = null;
       })
       .addCase(submitDocument.fulfilled, (state, action) => {
         state.submitStatus = "success";
-        state.serverResponse = action.payload;
+        state.factSheet = action.payload.fact_sheet;
+        state.blogPost = action.payload.blog_post;
+        state.socialThread = action.payload.social_thread;
+        state.emailTeaser = action.payload.email_teaser;
       })
       .addCase(submitDocument.rejected, (state, action) => {
         state.submitStatus = "error";

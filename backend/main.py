@@ -16,11 +16,8 @@ api_key = os.getenv("GEMINI_API_KEY")
 
 # --- THE STABLE MODEL CONFIG ---
 # Using 2.0-flash often solves the 404 issues seen in 1.5-flash on new accounts
-# Update this block in main.py
-# The 2026 stable free model
-# Updated LLM block in main.py
 llm = ChatGoogleGenerativeAI(
-    model="gemini-2.5-flash-lite", # Let's go back to 2.0-flash now that we've fixed the imports
+    model="gemini-2.5-flash-lite",
     google_api_key=api_key,
     temperature=0.1,
     max_retries=3
@@ -39,7 +36,6 @@ def fact_checker_node(state: AgentState):
     return {"fact_sheet": res.content}
 
 def copywriter_node(state: AgentState):
-    # We force the model to be very strict with JSON
     res = llm.invoke([
         SystemMessage(content="Return ONLY JSON with keys: blog_post, social_thread, email_teaser."),
         HumanMessage(content=f"Facts: {state['fact_sheet']}")
@@ -80,7 +76,6 @@ async def process(payload: DocReq):
             "email_teaser": result["final_outputs"].get("email_teaser"),
         }
     except Exception as e:
-        # This will print the EXACT error in your terminal if it fails
         print(f"!!! DEBUG ERROR: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
