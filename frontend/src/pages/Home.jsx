@@ -1,10 +1,13 @@
-import { useState, useRef, useEffect } from "react";
-import { FlaskIcon, CheckIcon, DownloadIcon,SparkleIcon,LinkIcon,CopyIcon } from "../components/icons";
-import { StepPill, ContentPanel, AlchemyLoader,SourcePreview} from "../components/ui";
-import { MarkdownBlock} from "../components/display";
-import '../../src/App.css'
+import { useState, useRef } from "react";
+import { FlaskIcon, CheckIcon, DownloadIcon, SparkleIcon, LinkIcon, CopyIcon } from "../components/icons";
+import { StepPill, ContentPanel, AlchemyLoader, SourcePreview } from "../components/ui";
+import HistorySidebar from "../components/ui/HistorySidebar";
+import { MarkdownBlock } from "../components/display";
+import '../../src/App.css';
+import '../../src/sidebar.css';
 
 const API_BASE = import.meta.env.VITE_API_URL;
+// const API_BASE = "http://localhost:8000";
 
 function downloadTxt(filename, text) {
   const blob = new Blob([typeof text === "string" ? text : JSON.stringify(text, null, 2)], { type: "text/plain" });
@@ -83,12 +86,11 @@ function clearSession() {
   try { sessionStorage.removeItem("alchemist_session"); } catch (_) {}
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// MAIN APP
-// ─────────────────────────────────────────────────────────────────────────────
-
 export default function App() {
   const session = loadSession();
+
+  // Sidebar state lives here so app-shell class can reflect it
+  const [sidebarOpen, setSidebarOpen] = useState(true);
 
   const [sourceType, setSourceType]           = useState("text");
   const [inputValue, setInputValue]           = useState(session?.source || "");
@@ -125,6 +127,17 @@ export default function App() {
     setStep(0); setResults(null); setInputValue(""); setError(""); setSubmittedSource(""); clearSession();
   };
 
+  // Restore a past run from sidebar
+  const handleRestore = (campaignData) => {
+    const normalized = normalizeResults(campaignData);
+    setResults(normalized);
+    setSubmittedSource(campaignData.source_content);
+    setInputValue(campaignData.source_content);
+    setStep(2);
+    clearSession();
+    setTimeout(() => resultsRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
+  };
+
   const handleDownloadAll = () => {
     if (!results) return;
     if (results.fact_sheet)    downloadTxt("fact-sheet.md",     results.fact_sheet);
@@ -134,115 +147,127 @@ export default function App() {
   };
 
   return (
-    <>
-      <header className="site-header">
-        <div className="logo">
-          <span className="logo-icon"><FlaskIcon /></span>
-          <span className="logo-text">The <em>Alchemist</em></span>
-        </div>
-        <span className="nav-tag">Autonomous Content Factory</span>
-      </header>
+    <div className={`app-shell ${sidebarOpen ? "sidebar-open" : "sidebar-closed"}`}>
 
-      <section className="hero">
-        <div className="hero-bg-grid" />
-        <div className="hero-glow g1" /><div className="hero-glow g2" />
-        <div className="hero-content">
-          <div className="hero-eyebrow"><SparkleIcon /> Two-Agent Pipeline</div>
-          <h1 className="hero-title">Turn one document<br />into <em>three channels</em></h1>
-          <p className="hero-sub">
-            Drop your raw source material below. Agent I verifies every fact.<br />
-            Agent II transmutes it into a blog post, social thread, and email teaser simultaneously.
-          </p>
-        </div>
-        <div className="pipeline-row">
-          <div className="pipe-node"><div className="pipe-dot a1" /><span className="pipe-label">Source Doc</span></div>
-          <div className="pipe-arrow">→</div>
-          <div className="pipe-node agent"><div className="pipe-dot a2" /><span className="pipe-label">Fact-Check Agent</span></div>
-          <div className="pipe-arrow">→</div>
-          <div className="pipe-node agent"><div className="pipe-dot a3" /><span className="pipe-label">Copywriter Agent</span></div>
-          <div className="pipe-arrow">→</div>
-          <div className="pipe-node"><div className="pipe-dot a4" /><span className="pipe-label">3 × Content</span></div>
-        </div>
-      </section>
+      {/* ── Left sidebar ── */}
+      <HistorySidebar
+        open={sidebarOpen}
+        onToggle={() => setSidebarOpen(v => !v)}
+        onRestore={handleRestore}
+        onNewRun={handleReset}
+      />
 
-      <main className="main-content">
-        {step < 2 && (
-          <section className="input-section">
-            <div className="steps-row">
-              <StepPill num="1" label="Provide Source"   active={step === 0} done={step > 0} />
-              <div className="steps-line" />
-              <StepPill num="2" label="Agent Processing" active={step === 1} done={step > 1} />
-              <div className="steps-line" />
-              <StepPill num="3" label="Receive Content"  active={step === 2} done={false} />
-            </div>
-            {step === 0 && (
-              <>
-                <div className="type-toggle">
-                  <button className={`toggle-btn ${sourceType === "text" ? "active" : ""}`} onClick={() => setSourceType("text")}>Raw Text</button>
-                  <button className={`toggle-btn ${sourceType === "url"  ? "active" : ""}`} onClick={() => setSourceType("url")}><LinkIcon /> URL</button>
-                </div>
-                <div className="textarea-wrapper">
-                  <textarea
-                    className="source-textarea"
-                    placeholder={sourceType === "url" ? "Paste a URL…" : "Paste your raw source material here…"}
-                    value={inputValue}
-                    onChange={e => setInputValue(e.target.value)}
-                    rows={10}
-                  />
-                  <div className="char-count">{inputValue.length} chars</div>
-                </div>
-                {error && <p className="error-msg">⚠ {error}</p>}
-                <button className="transmute-btn" onClick={handleTransmute}>
-                  <FlaskIcon /> Begin Transmutation
-                </button>
-              </>
-            )}
-            {step === 1 && <AlchemyLoader />}
-          </section>
-        )}
+      {/* ── Main content ── */}
+      <div className="app-main">
+        <header className="site-header">
+          <div className="logo">
+            <span className="logo-icon"><FlaskIcon /></span>
+            <span className="logo-text">The <em>Alchemist</em></span>
+          </div>
+          <span className="nav-tag">Autonomous Content Factory</span>
+        </header>
 
-        {step === 2 && results && (
-          <section className="results-section" ref={resultsRef}>
-            <div className="results-header">
-              <h2 className="results-title"><SparkleIcon /> Transmutation Complete</h2>
-              <button className="reset-btn" onClick={handleReset}>↩ Start Over</button>
-            </div>
+        <section className="hero">
+          <div className="hero-bg-grid" />
+          <div className="hero-glow g1" /><div className="hero-glow g2" />
+          <div className="hero-content">
+            <div className="hero-eyebrow"><SparkleIcon /> Two-Agent Pipeline</div>
+            <h1 className="hero-title">Turn one document<br />into <em>three channels</em></h1>
+            <p className="hero-sub">
+              Drop your raw source material below. Agent I verifies every fact.<br />
+              Agent II transmutes it into a blog post, social thread, and email teaser simultaneously.
+            </p>
+          </div>
+          <div className="pipeline-row">
+            <div className="pipe-node"><div className="pipe-dot a1" /><span className="pipe-label">Source Doc</span></div>
+            <div className="pipe-arrow">→</div>
+            <div className="pipe-node agent"><div className="pipe-dot a2" /><span className="pipe-label">Fact-Check Agent</span></div>
+            <div className="pipe-arrow">→</div>
+            <div className="pipe-node agent"><div className="pipe-dot a3" /><span className="pipe-label">Copywriter Agent</span></div>
+            <div className="pipe-arrow">→</div>
+            <div className="pipe-node"><div className="pipe-dot a4" /><span className="pipe-label">3 × Content</span></div>
+          </div>
+        </section>
 
-            {submittedSource && <SourcePreview text={submittedSource} />}
-
-            {results.fact_sheet && (
-              <div className="fact-sheet-card">
-                <div className="fact-sheet-header">
-                  <div className="output-card-title">
-                    <span className="output-icon">🔬</span>
-                    <span>Verified Fact-Sheet</span>
-                    <span className="badge">Agent I</span>
-                  </div>
-                  <div className="output-actions">
-                    <button className="icon-btn" onClick={() => { navigator.clipboard.writeText(results.fact_sheet); setFactCopied(true); setTimeout(() => setFactCopied(false), 1800); }}>
-                      {factCopied ? <CheckIcon /> : <CopyIcon />}
-                    </button>
-                    <button className="icon-btn download-btn" onClick={() => downloadTxt("fact-sheet.md", results.fact_sheet)}><DownloadIcon /></button>
-                  </div>
-                </div>
-                <div className="fact-sheet-body">
-                  <MarkdownBlock text={results.fact_sheet} />
-                </div>
+        <main className="main-content">
+          {step < 2 && (
+            <section className="input-section">
+              <div className="steps-row">
+                <StepPill num="1" label="Provide Source"   active={step === 0} done={step > 0} />
+                <div className="steps-line" />
+                <StepPill num="2" label="Agent Processing" active={step === 1} done={step > 1} />
+                <div className="steps-line" />
+                <StepPill num="3" label="Receive Content"  active={step === 2} done={false} />
               </div>
-            )}
+              {step === 0 && (
+                <>
+                  <div className="type-toggle">
+                    <button className={`toggle-btn ${sourceType === "text" ? "active" : ""}`} onClick={() => setSourceType("text")}>Raw Text</button>
+                    <button className={`toggle-btn ${sourceType === "url"  ? "active" : ""}`} onClick={() => setSourceType("url")}><LinkIcon /> URL</button>
+                  </div>
+                  <div className="textarea-wrapper">
+                    <textarea
+                      className="source-textarea"
+                      placeholder={sourceType === "url" ? "Paste a URL…" : "Paste your raw source material here…"}
+                      value={inputValue}
+                      onChange={e => setInputValue(e.target.value)}
+                      rows={10}
+                    />
+                    <div className="char-count">{inputValue.length} chars</div>
+                  </div>
+                  {error && <p className="error-msg">⚠ {error}</p>}
+                  <button className="transmute-btn" onClick={handleTransmute}>
+                    <FlaskIcon /> Begin Transmutation
+                  </button>
+                </>
+              )}
+              {step === 1 && <AlchemyLoader />}
+            </section>
+          )}
 
-            <ContentPanel results={results} />
+          {step === 2 && results && (
+            <section className="results-section" ref={resultsRef}>
+              <div className="results-header">
+                <h2 className="results-title"><SparkleIcon /> Transmutation Complete</h2>
+                <button className="reset-btn" onClick={handleReset}>↩ Start Over</button>
+              </div>
 
-            <div className="download-all-row">
-              <button className="download-all-btn" onClick={handleDownloadAll}>
-                <DownloadIcon /> Download All Files
-              </button>
-            </div>
-          </section>
-        )}
-      </main>
+              {submittedSource && <SourcePreview text={submittedSource} />}
 
-      <footer className="site-footer">The Alchemist · Autonomous Content Factory</footer>
-    </>
+              {results.fact_sheet && (
+                <div className="fact-sheet-card">
+                  <div className="fact-sheet-header">
+                    <div className="output-card-title">
+                      <span className="output-icon">🔬</span>
+                      <span>Verified Fact-Sheet</span>
+                      <span className="badge">Agent I</span>
+                    </div>
+                    <div className="output-actions">
+                      <button className="icon-btn" onClick={() => { navigator.clipboard.writeText(results.fact_sheet); setFactCopied(true); setTimeout(() => setFactCopied(false), 1800); }}>
+                        {factCopied ? <CheckIcon /> : <CopyIcon />}
+                      </button>
+                      <button className="icon-btn download-btn" onClick={() => downloadTxt("fact-sheet.md", results.fact_sheet)}><DownloadIcon /></button>
+                    </div>
+                  </div>
+                  <div className="fact-sheet-body">
+                    <MarkdownBlock text={results.fact_sheet} />
+                  </div>
+                </div>
+              )}
+
+              <ContentPanel results={results} />
+
+              <div className="download-all-row">
+                <button className="download-all-btn" onClick={handleDownloadAll}>
+                  <DownloadIcon /> Download All Files
+                </button>
+              </div>
+            </section>
+          )}
+        </main>
+
+        <footer className="site-footer">The Alchemist · Autonomous Content Factory</footer>
+      </div>
+    </div>
   );
 }
