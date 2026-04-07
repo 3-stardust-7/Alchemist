@@ -6,8 +6,9 @@ import { MarkdownBlock } from "../components/display";
 import '../../src/App.css';
 import '../../src/sidebar.css';
 
-const API_BASE = import.meta.env.VITE_API_URL;
+//const API_BASE = import.meta.env.VITE_API_URL;
 // const API_BASE = "http://localhost:8000";
+const API_BASE="https://alchemist-fnis.onrender.com"
 
 function downloadTxt(filename, text) {
   const blob = new Blob([typeof text === "string" ? text : JSON.stringify(text, null, 2)], { type: "text/plain" });
